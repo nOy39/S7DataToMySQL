@@ -7,7 +7,7 @@ import com.sourceforge.snap7.moka7.S7OrderCode;
 
 public class S7Connect {
 
-    public boolean fault;
+    public boolean faultConnection = true;
     public static final S7Client client = new S7Client();
 
     private static long Elapsed;
@@ -22,15 +22,15 @@ public class S7Connect {
         testBegin("Connection To()");
 
             client.SetConnectionType(S7.OP);
-        if (client.ConnectTo(plcIp, rack, slot)!=0) {
-            return;
 
-        } else if (result==0) {
+        if (client.ConnectTo(plcIp, rack, slot)==0) {
+            faultConnection = false;
             System.out.println("Connected to   : " + plcIp + " (Rack=" + rack + ", Slot=" + slot + ")");
             System.out.println("PDU negotiated : " + client.PDULength() + " bytes");
             testEnd(result);
             plcInfo();
         } else {
+
             error(result);
         }
 
@@ -86,4 +86,12 @@ public class S7Connect {
 
     }
 
+    @Override
+    public String toString() {
+        return "S7Connect{" +
+                "faultConnection=" + faultConnection +
+                ", faultCount=" + faultCount +
+                ", workCount=" + workCount +
+                '}';
+    }
 }

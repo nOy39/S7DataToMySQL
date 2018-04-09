@@ -18,27 +18,26 @@ public class Main {
     private static boolean isRunning = true;
     private static boolean s7FaultConnection = false;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
 
         if (args.length!=3) {
             consoleMessageHowToStart();
         } else {
-            try {
                 startApp(args[0], args[1], args[2]);
-            } catch (NullPointerException ex) {
-                System.out.println("===============================================");
-                System.err.println(ex);
-                System.out.println("===============================================");
-
-            }
         }
 
     }
 
-    private static void startApp(String arg, String arg1, String arg2){
+    private static void startApp(String arg, String arg1, String arg2) throws InterruptedException {
 
             s7Connect = new S7Connect(arg, Integer.parseInt(arg1), Integer.parseInt(arg2));
-            dispatcherPLC(s7Connect);
+            System.out.println(s7Connect);
+            if (!s7Connect.faultConnection) {
+                dispatcherPLC(s7Connect);
+            } else {
+                Thread.sleep(10000);
+                startApp(arg, arg1, arg2);
+            }
 
 
         }
@@ -52,9 +51,13 @@ public class Main {
         DispatcherPLC plcReadDB10 = new DispatcherPLC(s7Connect);
 
 
-        while (isRunning) {
+        while (isRunning && !s7Connect.faultConnection) {
+            if (workingStatus > plcReadDB.getIntData(9,82)
+                    && plcReadDB.getIntData(9,82) == 0) {
+                workingStatus = 0;
+            }
 
-            if (workingStatus < plcReadDB.getIntData(9,82)) {
+            if (workingStatus < plcReadDB.getIntData(9,82) ) {
                 ref = buildReffObj(plcReadDB.getShortData(10,102),
                         plcReadDB.getIntData(9,12),
                         plcReadDB.getIntData(9,0));
