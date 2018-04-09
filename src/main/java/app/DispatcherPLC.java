@@ -46,7 +46,7 @@ public class DispatcherPLC {
             return  S7.GetDIntAt(buffer,bitAddres);
         }
 
-        return value;
+        return value = resultConnection(dbAdd);
     }
 
     public static short getShortData(int dbAdd, int bitAddres) {

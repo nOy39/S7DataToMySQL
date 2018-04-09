@@ -14,6 +14,9 @@ public class S7Connect {
     private int faultCount;
     private int workCount;
 
+    public S7Connect(){
+
+    }
 
     public S7Connect(String plcIp, int rack, int slot) {
 
@@ -22,6 +25,7 @@ public class S7Connect {
         testBegin("Connection To()");
 
             client.SetConnectionType(S7.OP);
+
 
         if (client.ConnectTo(plcIp, rack, slot)==0) {
             faultConnection = false;
@@ -86,6 +90,9 @@ public class S7Connect {
 
     }
 
+    public void disconnect() {
+        client.Disconnect();
+    }
     @Override
     public String toString() {
         return "S7Connect{" +

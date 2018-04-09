@@ -18,12 +18,20 @@ public class Main {
     private static boolean isRunning = true;
     private static boolean s7FaultConnection = false;
 
+    private static String PLC_IP = "";
+    private static String PLC_RACK = "";
+    private static String PLC_SLOT = "";
+
+
     public static void main(String[] args) throws InterruptedException {
 
         if (args.length!=3) {
             consoleMessageHowToStart();
         } else {
-                startApp(args[0], args[1], args[2]);
+            PLC_IP = args[0];
+            PLC_RACK = args[1];
+            PLC_SLOT = args[2];
+            startApp(args[0], args[1], args[2]);
         }
 
     }
@@ -33,7 +41,7 @@ public class Main {
             s7Connect = new S7Connect(arg, Integer.parseInt(arg1), Integer.parseInt(arg2));
             System.out.println(s7Connect);
             if (!s7Connect.faultConnection) {
-                dispatcherPLC(s7Connect);
+                dispatcherPLC(s7Connect, s7Connect.faultConnection);
             } else {
                 Thread.sleep(10000);
                 startApp(arg, arg1, arg2);
@@ -42,7 +50,7 @@ public class Main {
 
         }
 
-    private static void dispatcherPLC(S7Connect s7Connect) {
+    private static void dispatcherPLC(S7Connect s7Connect, boolean connectionStatus) {
 
         Refrigerator ref = new Refrigerator();
         long workingStatus = 0;
@@ -50,20 +58,36 @@ public class Main {
         DispatcherPLC plcReadDB = new DispatcherPLC(s7Connect);
         DispatcherPLC plcReadDB10 = new DispatcherPLC(s7Connect);
 
+        S7Connect connect;
 
-        while (isRunning && !s7Connect.faultConnection) {
+        while (!s7Connect.faultConnection) {
+//            connect = new S7Connect(PLC_IP,Integer.parseInt(PLC_RACK),Integer.parseInt(PLC_SLOT));
+//            System.out.println("Connection : "+!connect.faultConnection);
+//            System.out.println(!s7Connect.faultConnection);
+
             if (workingStatus > plcReadDB.getIntData(9,82)
-                    && plcReadDB.getIntData(9,82) == 0) {
+                    && plcReadDB.getIntData(9,82) == 0 && !s7Connect.faultConnection) {
                 workingStatus = 0;
+
             }
 
-            if (workingStatus < plcReadDB.getIntData(9,82) ) {
+            if (workingStatus < plcReadDB.getIntData(9,82)  &&
+                    !s7Connect.faultConnection) {
                 ref = buildReffObj(plcReadDB.getShortData(10,102),
                         plcReadDB.getIntData(9,12),
                         plcReadDB.getIntData(9,0));
                 dbHand.setRefToBase(ref);
 
                 workingStatus = plcReadDB.getIntData(9,82);
+            }
+            if (plcReadDB.getIntData(9,82) < 0 ) {
+                System.out.println("ba-ba-ba-ba-ha");
+                try {
+                    s7Connect.disconnect();
+                    startApp(PLC_IP,PLC_RACK,PLC_SLOT);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
 
             try {
@@ -72,7 +96,9 @@ public class Main {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+//            System.out.println("PLC Connection: " + !s7Connect.faultConnection);
         }
+
     }
 
     private static void consoleMessageHowToStart() {
